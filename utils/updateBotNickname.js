@@ -1,11 +1,12 @@
-async function updateBotNickname(isPaused) {
+async function updateBotNickname(isPaused, interaction) {
   // Update the bot's nickname to indicate whether it's paused or not
   const botUserId = "889320148643749899";
   const pauseEmoji = "\u23F8";
   const newNickname = isPaused ? `${pauseEmoji} wastedpotbot` : "wastedpotbot";
 
   // Find the guild
-  const guild = client.guilds.cache("398293933416906782");
+
+  const guild = interaction.guild;
 
   if (!guild) {
     console.error("Guild not found.");

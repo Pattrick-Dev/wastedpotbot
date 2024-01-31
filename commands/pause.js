@@ -11,28 +11,23 @@ async function pauseCommand(interaction, audioPlayer) {
         return;
     }
 
-    const isPaused = getIsPaused();
+    // const isPaused = getIsPaused();
 
     if (audioPlayer.state.status === AudioPlayerStatus.Playing) {
         audioPlayer.pause();
-        // updateBotNickname(true)
+        updateBotNickname(true, interaction)
         await interaction.reply({
             content: "Paused audio playback.",
             ephemeral: true,
         });
-    } else if (isPaused) {
+    } else if (audioPlayer.state.status === AudioPlayerStatus.Paused){
         audioPlayer.unpause();
-        // updateBotNickname(false)
+        updateBotNickname(false, interaction)
         await interaction.reply({
             content: "Resumed audio playback.",
             ephemeral: true,
         });
-    } else {
-        await interaction.reply({
-            content: "No audio is currently paused.",
-            ephemeral: true,
-        });
-    }
+    } 
 }
 
 module.exports = pauseCommand;

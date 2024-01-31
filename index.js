@@ -1,16 +1,12 @@
-const {
-  Client,
-  GatewayIntentBits,
-} = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const token = process.env["TOKEN"];
 
 // Command Imports //
 const playCommand = require("./commands/play");
-const joinCommand = require('./commands/join');
-const queueCommand = require('./commands/queue');
-const pauseCommand = require('./commands/pause');
-
+const joinCommand = require("./commands/join");
+const queueCommand = require("./commands/queue");
+const pauseCommand = require("./commands/pause");
 
 // Event Imports //
 const playNextInQueue = require("./utils/playNextInQueue");
@@ -23,7 +19,6 @@ const {
 } = require("@discordjs/voice");
 // const googleTTS = require("google-tts-api");
 
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -34,7 +29,7 @@ const client = new Client({
 module.exports = client;
 let connection;
 let playlistQueue = [];
-const audioPlayer = require('./utils/audioPlayer');
+const audioPlayer = require("./utils/audioPlayer");
 
 audioPlayer.on("stateChange", (oldState, newState) => {
   console.log(
@@ -150,7 +145,18 @@ const commands = [
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
-  client.user.setUsername("wastedpotbot");
+  const guild = client.guilds.cache.get("398293933416906782");
+  const botMember = guild.members.cache.get(client.user.id);
+  if (botMember) {
+    botMember.setNickname("wastedpotbot")
+      .then(() => {
+        console.log(`Nickname set to wastedpotbot in guild '${guild.name}'`);
+      })
+      .catch(console.error);
+  }
+
+
+
   // Set up slash commands for the bot
   client.guilds.cache
     .first()
@@ -169,15 +175,13 @@ client.on("interactionCreate", async (interaction) => {
       connection = await joinCommand(interaction, connection);
     } else if (commandName === "play") {
       await playCommand(interaction, audioPlayer, connection);
-    } else 
-      if (interaction.commandName === "queue") {
+    } else if (interaction.commandName === "queue") {
       await queueCommand(interaction);
-    } else 
-        if (
+    } else if (
       interaction.commandName === "pause" ||
       interaction.commandName === "resume"
     ) {
-          await pauseCommand(interaction, audioPlayer);
+      await pauseCommand(interaction, audioPlayer);
     } else if (interaction.commandName === "repeat") {
       await interaction.reply({
         content: `That's a premium feature! aka its fucking broken`,
