@@ -6,7 +6,7 @@ const {
   ActionRowBuilder,
 } = require("discord.js");
 
-const mySecret = process.env['TOKEN']
+const token = process.env['TOKEN']
 
 const {
   joinVoiceChannel,
@@ -34,11 +34,13 @@ audioPlayer = createAudioPlayer();
 
 audioPlayer.on('stateChange', (oldState, newState) => {
   console.log(`Audio player state changed from ${oldState.status} to ${newState.status}`);
+
+  if (newState.status === AudioPlayerStatus.Idle) {
+    // Play the next song in the queue when the current song finishes
+    playNextInQueue();
+  }
 });
 
-audioPlayer.on('error', error => {
-  console.error('Error:', error.message);
-});
 
 let currentPlaying = null;
 let isRepeatSong = false;
@@ -615,6 +617,7 @@ function playNextInQueue() {
     isPlaying = false;
   }
 }
+
 
 async function searchYouTube(query) {
   return new Promise((resolve, reject) => {
