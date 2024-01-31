@@ -6,7 +6,7 @@ const {
   ActionRowBuilder,
 } = require("discord.js");
 
-const token = process.env['TOKEN']
+const mySecret = process.env['TOKEN']
 
 const {
   joinVoiceChannel,
@@ -148,8 +148,7 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
   client.user.setUsername("wastedpotbot");
   // Set up slash commands for the bot
-  client.guilds.cache
-    .get("398293933416906782")
+  client.guilds.cache.first()
     .commands.set(commands)
     .then(() => console.log("Slash commands registered"))
     .catch(console.error);
@@ -555,13 +554,13 @@ client.on("interactionCreate", async (interaction) => {
 
 function updateBotNickname(isPaused) {
   // Update the bot's nickname to indicate whether it's paused or not
-  const guildId = "398293933416906782";
+  client.guilds.cache.first().id;
   const botUserId = "889320148643749899";
   const pauseEmoji = "\u23F8";
   const newNickname = isPaused ? `${pauseEmoji} wastedpotbot` : "wastedpotbot";
 
   // Find the guild
-  const guild = client.guilds.cache.get(guildId);
+  const guild = client.guilds.cache.first();
 
   if (!guild) {
     console.error("Guild not found.");
