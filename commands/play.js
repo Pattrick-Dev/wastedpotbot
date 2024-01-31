@@ -57,7 +57,11 @@ async function playCommand(interaction, audioPlayer, connection) {
         } else if (ytdl.validateURL(url)) {
           // Handle single YouTube video
           const videoInfo = await ytdl.getInfo(url);
-          playlistQueue.push({ url, title: videoInfo.videoDetails.title });
+          addToQueue({
+            url: url,
+            title: videoInfo.videoDetails.title,
+          });
+          // playlistQueue.push({ url, title: videoInfo.videoDetails.title });
           interaction.reply({
             content: `Added ${videoInfo.videoDetails.title} to the queue.`,
             ephemeral: true,
@@ -88,6 +92,7 @@ async function playCommand(interaction, audioPlayer, connection) {
     } else 
       if (searchQuery) {
       // Handle YouTube search ------------------------------------
+        
       const searchResults = await searchYouTube(searchQuery);
 
       if (searchResults.length === 0) {

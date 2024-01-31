@@ -1,7 +1,8 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
 const token = process.env["TOKEN"];
-
+//
+const keepAlive = require("./utils/server");
 // Command Imports //
 const playCommand = require("./commands/play");
 const joinCommand = require("./commands/join");
@@ -173,16 +174,20 @@ client.on("interactionCreate", async (interaction) => {
   try {
     if (commandName === "join") {
       connection = await joinCommand(interaction, connection);
-    } else if (commandName === "play") {
+    } else 
+      if (commandName === "play") {
       await playCommand(interaction, audioPlayer, connection);
-    } else if (interaction.commandName === "queue") {
+    } else 
+        if (interaction.commandName === "queue") {
       await queueCommand(interaction);
-    } else if (
+    } else 
+      if (
       interaction.commandName === "pause" ||
       interaction.commandName === "resume"
     ) {
       await pauseCommand(interaction, audioPlayer);
-    } else if (interaction.commandName === "repeat") {
+    } else 
+        if (interaction.commandName === "repeat") {
       await interaction.reply({
         content: `That's a premium feature! aka its fucking broken`,
         ephemeral: true,
@@ -348,3 +353,4 @@ function updateBotNickname(isPaused) {
 }
 
 client.login(token);
+keepAlive();
