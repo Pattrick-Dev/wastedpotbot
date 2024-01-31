@@ -1,13 +1,20 @@
 const {
   Client,
   GatewayIntentBits,
-  EmbedBuilder,
-  ButtonBuilder,
-  ActionRowBuilder,
 } = require("discord.js");
 
-const token = process.env['TOKEN']
+const token = process.env["TOKEN"];
 
+// Command Imports //
+const playCommand = require("./commands/play");
+const joinCommand = require('./commands/join');
+const queueCommand = require('./commands/queue');
+const pauseCommand = require('./commands/pause');
+
+
+// Event Imports //
+const playNextInQueue = require("./utils/playNextInQueue");
+//
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -15,9 +22,7 @@ const {
   AudioPlayerStatus,
 } = require("@discordjs/voice");
 // const googleTTS = require("google-tts-api");
-const ytdl = require("ytdl-core");
-const ytpl = require("ytpl");
-const search = require("yt-search");
+
 
 const client = new Client({
   intents: [
@@ -26,26 +31,23 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
   ],
 });
-
+module.exports = client;
 let connection;
 let playlistQueue = [];
-let isPlaying = false;
-audioPlayer = createAudioPlayer();
+const audioPlayer = require('./utils/audioPlayer');
 
-audioPlayer.on('stateChange', (oldState, newState) => {
-  console.log(`Audio player state changed from ${oldState.status} to ${newState.status}`);
+audioPlayer.on("stateChange", (oldState, newState) => {
+  console.log(
+    `Audio player state changed from ${oldState.status} to ${newState.status}`,
+  );
 
   if (newState.status === AudioPlayerStatus.Idle) {
     // Play the next song in the queue when the current song finishes
-    playNextInQueue();
+    playNextInQueue(audioPlayer, connection);
   }
 });
 
-
 let currentPlaying = null;
-let isRepeatSong = false;
-const timers = new Map();
-let paused = false;
 
 const commands = [
   {
@@ -150,11 +152,11 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
   client.user.setUsername("wastedpotbot");
   // Set up slash commands for the bot
-  client.guilds.cache.first()
+  client.guilds.cache
+    .first()
     .commands.set(commands)
     .then(() => console.log("Slash commands registered"))
     .catch(console.error);
-
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -164,268 +166,23 @@ client.on("interactionCreate", async (interaction) => {
 
   try {
     if (commandName === "join") {
-      const guild = interaction.guild;
-      const member = guild.members.cache.get(user.id);
-
-      if (!member.voice.channel) {
-        await interaction.reply({
-          content: "You must be in a voice channel to use this command.",
-          ephemeral: true,
-        });
-        return;
-      }
-
-      const channel = member.voice.channel;
-
-      if (!connection) {
-        connection = joinVoiceChannel({
-          channelId: channel.id,
-          guildId: guild.id,
-          adapterCreator: guild.voiceAdapterCreator,
-        });
-      }
-
-      await interaction.reply({
-        content: `Joined channel ${channel.name}`,
-        ephemeral: true,
-      });
-    } 
-    else if (commandName === "play") {
-      const url = interaction.options.getString("url");
-      const member = interaction.member;
-      const searchQuery = interaction.options.getString("search");
-      const voiceChannel = member.voice.channel;
-
-      if (!voiceChannel) {
-        await interaction.reply("You need to be in a voice channel to use this command.");
-        return;
-      }
-
-      try {
-        connection = joinVoiceChannel({
-          channelId: voiceChannel.id,
-          guildId: interaction.guildId,
-          adapterCreator: interaction.guild.voiceAdapterCreator,
-        });
-        connection.subscribe(audioPlayer); // Subscribe the audio player immediately
-      } catch (error) {
-        console.error(error);
-        await interaction.reply("Failed to join the voice channel.");
-      }
-      if (!url && !searchQuery) {
-        interaction.reply({
-          content: "Please provide a valid YouTube URL or a search query.",
-          ephemeral: true,
-        });
-        return;
-      }
-
-      if (url) {
-        try {
-          if (ytpl.validateID(url)) {
-            // Handle YouTube playlist
-            const playlist = await ytpl(url);
-            playlist.items.forEach((item) => {
-              playlistQueue.push({
-                url: item.url,
-                title: item.title + " (" + item.length + ")",
-              });
-            });
-            interaction.reply({
-              content: `Added playlist ${playlist.title} to the queue.`,
-              ephemeral: true,
-            });
-          } else if (ytdl.validateURL(url)) {
-            // Handle single YouTube video
-            const videoInfo = await ytdl.getInfo(url);
-            playlistQueue.push({ url, title: videoInfo.videoDetails.title });
-            interaction.reply({
-              content: `Added ${videoInfo.videoDetails.title} to the queue.`,
-              ephemeral: true,
-            });
-          } else {
-            interaction.reply({
-              content: "Invalid YouTube URL or playlist ID.",
-              ephemeral: true,
-            });
-            return;
-          }
-
-          // Check if audio is currently playing; if not, start playback
-          if (
-            !isPlaying &&
-            audioPlayer.state.status !== AudioPlayerStatus.Playing &&
-            !paused
-          ) {
-            playNextInQueue();
-          }
-        } catch (error) {
-          console.error(error);
-          interaction.reply({
-            content: "There was an error processing your request.",
-            ephemeral: true,
-          });
-        }
-      } else if (searchQuery) {
-        // Handle YouTube search ------------------------------------
-        const searchResults = await searchYouTube(searchQuery);
-
-        if (searchResults.length === 0) {
-          interaction.reply({
-            content: "No search results found.",
-            ephemeral: true,
-          });
-          return;
-        }
-
-        // Create an embed with clickable URLs and buttons for the top 5 search results
-        const searchEmbed = new EmbedBuilder()
-          .setTitle("Top 5 search results:")
-          .setColor(0x3498db); 
-
-        const fields = searchResults.slice(0, 5).map((result, index) => ({
-          name: `${index + 1}. ${result.title}`,
-          value: `[Watch](${result.url})`,
-        }));
-
-          searchEmbed.addFields(fields);
-
-        // Create clickable buttons for the same search results
-        const buttonComponents = searchResults
-          .slice(0, 5)
-          .map((result, index) => {
-            return new ButtonBuilder()
-              .setCustomId(`select_video_${index}`)
-              .setLabel(`Select ${index + 1}`)
-              .setStyle(1);
-          });
-
-        const actionRow = new ActionRowBuilder().addComponents(
-          buttonComponents,
-        );
-        // Send a message with the embed and buttons
-        const searchMessage = await interaction.reply({
-          embeds: [searchEmbed], 
-          components: [actionRow],
-          ephemeral: true,
-        });
-
-        // Handle button interactions for selecting videos
-        const filter = (i) => i.customId.startsWith("select_video_");
-        const collector = searchMessage.createMessageComponentCollector({
-          filter,
-          time: 15000, 
-        });
-
-        collector.on("collect", async (i) => {
-          const index = parseInt(i.customId.split("_")[2]);
-          if (!isNaN(index) && index >= 0 && index < searchResults.length) {
-            const selectedVideo = searchResults[index];
-            playlistQueue.push({
-              url: selectedVideo.url,
-              title: selectedVideo.title,
-            });
-
-            // Disable all buttons
-            const disabledButtons = buttonComponents.map(button => 
-              new ButtonBuilder(button.data).setDisabled(true)
-            );
-            const actionRow = new ActionRowBuilder().addComponents(disabledButtons);
-
-            // Update the original message to disable the buttons
-            await i.update({
-              content: `Selected: ${selectedVideo.title}`,
-              components: [actionRow],
-              embeds: [] // Clear any embeds if you don't want them to persist
-            });
-
-            // Reply to inform the user that the song has been added to the queue
-            await i.followUp({
-              content: `Added ${selectedVideo.title} to the queue.`,
-              ephemeral: true,
-            });
-
-            // Check if audio is currently playing; if not, start playback
-            if (
-              !isPlaying &&
-              audioPlayer.state.status !== AudioPlayerStatus.Playing &&
-              !paused
-            ) {
-              playNextInQueue();
-            }
-          }
-        });
-
-
-        collector.on("end", (collected) => {
-          if (collected.size === 0) {
-            interaction.followUp({
-              content: "You didn't select a video within the time limit.",
-              ephemeral: true,
-            });
-          }
-        });
-      }
-    } else if (interaction.commandName === "queue") {
-      let response = "";
-
-      // Check if there is a song currently playing and include it in the response
-      if (currentPlaying) {
-        response += `Playing: **${currentPlaying.title}**\n`;
-      }
-
-      // Add the queued songs to the response
-      if (playlistQueue.length === 0) {
-        response += "The queue is currently empty.";
-      } else {
-        const queueMessage = playlistQueue
-          .map((item, index) => `**${index + 1}. ${item.title}**`)
-          .join("\n");
-        response += `Queue:\n${queueMessage}`;
-      }
-
-      await interaction.reply({ content: response, ephemeral: true });
-    } else if (
+      connection = await joinCommand(interaction, connection);
+    } else if (commandName === "play") {
+      await playCommand(interaction, audioPlayer, connection);
+    } else 
+      if (interaction.commandName === "queue") {
+      await queueCommand(interaction);
+    } else 
+        if (
       interaction.commandName === "pause" ||
       interaction.commandName === "resume"
     ) {
-      if (!connection || !audioPlayer) {
-        await interaction.reply({
-          content: "Not currently playing audio.",
-          ephemeral: true,
-        });
-        return;
-      }
-
-      if (audioPlayer.state.status === AudioPlayerStatus.Playing) {
-        audioPlayer.pause();
-        updateBotNickname(true);
-        paused = true;
-        await interaction.reply({
-          content: "Paused audio playback.",
-          ephemeral: true,
-        });
-      } else if (audioPlayer.state.status === AudioPlayerStatus.Paused) {
-        audioPlayer.unpause();
-        updateBotNickname(false);
-        paused = false;
-        await interaction.reply({
-          content: "Resumed audio playback.",
-          ephemeral: true,
-        });
-      } else {
-        await interaction.reply({
-          content: "No audio is currently playing.",
-          ephemeral: true,
-        });
-      }
+          await pauseCommand(interaction, audioPlayer);
     } else if (interaction.commandName === "repeat") {
-
       await interaction.reply({
         content: `That's a premium feature! aka its fucking broken`,
         ephemeral: true,
       });
-
     } else if (commandName === "help") {
       // Provide a list of available commands and their descriptions
       const commandList = commands
@@ -463,7 +220,6 @@ client.on("interactionCreate", async (interaction) => {
         }
         // Stop the current audio player to skip to the next song
         audioPlayer.stop();
-        
       }
 
       await interaction.reply({
@@ -492,8 +248,7 @@ client.on("interactionCreate", async (interaction) => {
         content: `Removed song at index ${indexToRemove}: ${removedSong[0].title}`,
         ephemeral: true,
       });
-    } 
-    else if (interaction.commandName === "shuffle") {
+    } else if (interaction.commandName === "shuffle") {
       if (playlistQueue.length < 2) {
         interaction.reply({
           content: "Queue must have at least two songs to shuffle.",
@@ -588,54 +343,4 @@ function updateBotNickname(isPaused) {
     });
 }
 
-function playNextInQueue() {
-  if (playlistQueue.length === 0) {
-    console.log("Queue is empty, stopping playback.");
-    isPlaying = false;
-    currentPlaying = null;
-    return;
-  }
-
-  isPlaying = true;
-  const video = playlistQueue.shift();
-  currentPlaying = video;
-
-  console.log(`Playing: ${video.title}`);
-
-  const stream = ytdl(video.url, { filter: "audioonly" });
-  const resource = createAudioResource(stream);
-
-  try {
-    audioPlayer.play(resource);
-    if (connection) {
-      connection.subscribe(audioPlayer);
-    } else {
-      console.error('No voice connection to subscribe to.');
-    }
-  } catch (error) {
-    console.error('Error playing audio:', error);
-    isPlaying = false;
-  }
-}
-
-
-async function searchYouTube(query) {
-  return new Promise((resolve, reject) => {
-    search(query, (err, res) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(
-          res.videos.slice(0, 10).map((video) => ({
-            title: video.title,
-            url: video.url,
-          })),
-        );
-      }
-    });
-  });
-}
-
-client.login(
-  token,
-);
+client.login(token);
