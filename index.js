@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const token = process.env["TOKEN"];
+// const token = process.env["TOKEN"];
 //
 const keepAlive = require("./utils/server");
 // Command Imports //
@@ -353,5 +353,5 @@ function updateBotNickname(isPaused) {
     });
 }
 
-client.login(token);
+client.login('ODg5MzIwMTQ4NjQzNzQ5ODk5.G-4iZU.ZU_8AbNF6MoqpeXsvD0L1UK4HSAYovmd8E154w');
 keepAlive();
