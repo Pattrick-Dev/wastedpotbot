@@ -30,7 +30,8 @@ const client = new Client({
 module.exports = client;
 let connection;
 let playlistQueue = [];
-const audioPlayer = require("./utils/audioPlayer");
+const { audioPlayer } = require("./utils/audioPlayer");
+
 
 audioPlayer.on("stateChange", (oldState, newState) => {
   console.log(

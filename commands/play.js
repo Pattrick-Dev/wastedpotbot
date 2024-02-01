@@ -139,7 +139,7 @@ async function playCommand(interaction, audioPlayer, connection) {
       const filter = (i) => i.customId.startsWith("select_video_");
       const collector = searchMessage.createMessageComponentCollector({
         filter,
-        time: 15000, 
+        time: 30000, 
       });
 
       collector.on("collect", async (i) => {

@@ -27,7 +27,7 @@ function playNextInQueue(audioPlayer, connection) {
   const resource = createAudioResource(stream);
   
   try {
-    const audioPlayer = require('../utils/audioPlayer');
+    const { audioPlayer } = require('../utils/audioPlayer');
     audioPlayer.play(resource);
     if (connection) {
       connection.subscribe(audioPlayer);

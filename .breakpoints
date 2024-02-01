@@ -1,12 +1,3 @@
 {
-  "files": {
-    "commands/play.js": [
-      {
-        "id": "f49ebb39-8a81-4597-9ca2-c947306b7efb",
-        "line": 144,
-        "version": 83,
-        "index": 4926
-      }
-    ]
-  }
+  "files": {}
 }
