@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
 require('dotenv').config();
-const token = process.env.TOKEN;
+
 //
 const keepAlive = require("./utils/server");
 // Command Imports //
@@ -147,6 +147,7 @@ const commands = [
 ];
 
 client.on("ready", () => {
+  console.log(process.env.TOKEN)
   console.log(`Logged in as ${client.user.tag}!`);
   const guild = client.guilds.cache.get("398293933416906782");
   const botMember = guild.members.cache.get(client.user.id);
@@ -349,5 +350,5 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 
-client.login(token);
+client.login(process.env.TOKEN);
 keepAlive();
