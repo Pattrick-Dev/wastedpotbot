@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const token = process.env["TOKEN"];
+require('dotenv').config();
+const token = process.env.TOKEN;
 //
 const keepAlive = require("./utils/server");
 // Command Imports //
@@ -166,7 +167,35 @@ client.on("ready", () => {
     .then(() => console.log("Slash commands registered"))
     .catch(console.error);
 });
+//joke
+client.on('voiceStateUpdate', async (oldState, newState) => {
+    // Check if the user joined a channel (newState.channelId exists and oldState.channelId does not)
+    if (newState.channelId && newState.channelId !== oldState.channelId) {
+        // Specify the ID of the channel you want to check if the user joined
+        const targetChannelId = '985665917637783582'; // The channel you're monitoring
+        const moveToChannelId = '1094829844291911732'; // The channel you want to move the user to (AFK or holding channel)
 
+        // If the user joined the target channel, move them to the moveToChannel
+        if (newState.channelId === targetChannelId) {
+            // Get the channel object for moveToChannelId
+            const moveToChannel = await client.channels.fetch(moveToChannelId);
+
+            // Check if moveToChannel is a voice channel
+            if (moveToChannel && moveToChannel.isVoice()) {
+                try {
+                    // Move the user to the moveToChannel
+                    await newState.member.voice.setChannel(moveToChannel);
+                    console.log(`Moved ${newState.member.user.username} to ${moveToChannel.name}`);
+                } catch (error) {
+                    console.error(`Error moving user: ${error}`);
+                }
+            } else {
+                console.error('The moveToChannel is not a voice channel or was not found.');
+            }
+        }
+    }
+});
+//
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
