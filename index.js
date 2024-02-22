@@ -1,9 +1,7 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
-require('dotenv').config();
-
+const token = process.env["TOKEN"];
 //
-const keepAlive = require("./utils/server");
 // Command Imports //
 const playCommand = require("./commands/play");
 const joinCommand = require("./commands/join");
@@ -147,7 +145,6 @@ const commands = [
 ];
 
 client.on("ready", () => {
-  console.log(process.env.TOKEN)
   console.log(`Logged in as ${client.user.tag}!`);
   const guild = client.guilds.cache.get("398293933416906782");
   const botMember = guild.members.cache.get(client.user.id);
@@ -168,35 +165,7 @@ client.on("ready", () => {
     .then(() => console.log("Slash commands registered"))
     .catch(console.error);
 });
-//joke
-client.on('voiceStateUpdate', async (oldState, newState) => {
-    // Check if the user joined a channel (newState.channelId exists and oldState.channelId does not)
-    if (newState.channelId && newState.channelId !== oldState.channelId) {
-        // Specify the ID of the channel you want to check if the user joined
-        const targetChannelId = '985665917637783582'; // The channel you're monitoring
-        const moveToChannelId = '1094829844291911732'; // The channel you want to move the user to (AFK or holding channel)
 
-        // If the user joined the target channel, move them to the moveToChannel
-        if (newState.channelId === targetChannelId) {
-            // Get the channel object for moveToChannelId
-            const moveToChannel = await client.channels.fetch(moveToChannelId);
-
-            // Check if moveToChannel is a voice channel
-            if (moveToChannel && moveToChannel.isVoice()) {
-                try {
-                    // Move the user to the moveToChannel
-                    await newState.member.voice.setChannel(moveToChannel);
-                    console.log(`Moved ${newState.member.user.username} to ${moveToChannel.name}`);
-                } catch (error) {
-                    console.error(`Error moving user: ${error}`);
-                }
-            } else {
-                console.error('The moveToChannel is not a voice channel or was not found.');
-            }
-        }
-    }
-});
-//
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
@@ -349,6 +318,38 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
+function updateBotNickname(isPaused) {
+  // Update the bot's nickname to indicate whether it's paused or not
+  client.guilds.cache.first().id;
+  const botUserId = "889320148643749899";
+  const pauseEmoji = "\u23F8";
+  const newNickname = isPaused ? `${pauseEmoji} wastedpotbot` : "wastedpotbot";
 
-client.login(process.env.TOKEN);
-keepAlive();
+  // Find the guild
+  const guild = client.guilds.cache.first();
+
+  if (!guild) {
+    console.error("Guild not found.");
+    return;
+  }
+
+  // Find the bot's member within the guild using its user ID
+  const botMember = guild.members.cache.get(botUserId);
+
+  if (!botMember) {
+    console.error("Bot member not found in the guild.");
+    return;
+  }
+
+  // Change the bot's nickname
+  botMember
+    .setNickname(newNickname)
+    .then((updatedMember) => {
+      console.log(`Bot's nickname updated to ${updatedMember.displayName}`);
+    })
+    .catch((error) => {
+      console.error("Error changing nickname:", error);
+    });
+}
+
+client.login(token);

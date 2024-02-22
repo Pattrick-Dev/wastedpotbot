@@ -25,7 +25,7 @@ function playNextInQueue(audioPlayer, connection) {
 
   const stream = ytdl(video.url, { filter: 'audioonly' });
   const resource = createAudioResource(stream);
-  
+
   try {
     const { audioPlayer } = require('../utils/audioPlayer');
     audioPlayer.play(resource);
