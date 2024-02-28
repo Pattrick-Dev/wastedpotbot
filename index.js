@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const token = process.env["TOKEN"];
+const token = process.env.TOKEN;
 //
 // Command Imports //
 const playCommand = require("./commands/play");
